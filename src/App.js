@@ -1,7 +1,11 @@
 import React, { useRef, useEffect, useState, useCallback } from "react";
 import { ForceGraph2D } from "react-force-graph";
+// For collision forces:
 import * as d3 from "d3-force-3d";
 
+//
+// 1) Define color map and node groups
+//
 const colorMap = {
   policy: "#ff6b6b",
   initiative: "#4ecdc4",
@@ -9,14 +13,24 @@ const colorMap = {
   economic: "#96ceb4"
 };
 
-const Graph = () => {
+export default function Graph() {
   const graphRef = useRef(null);
   const [highlightNodes, setHighlightNodes] = useState(new Set());
   const [highlightLinks, setHighlightLinks] = useState(new Set());
   const [selectedNode, setSelectedNode] = useState(null);
   const [isStabilized, setIsStabilized] = useState(false);
+  const [isMobile, setIsMobile] = useState(window.innerWidth < 768);
 
-  // Use a ref to keep the graph data from recreating each render
+  // Add resize listener
+  useEffect(() => {
+    const handleResize = () => setIsMobile(window.innerWidth < 768);
+    window.addEventListener('resize', handleResize);
+    return () => window.removeEventListener('resize', handleResize);
+  }, []);
+
+  //
+  // 2) Store your graph data in a ref to avoid regenerating each render
+  //
   const graphDataRef = useRef({
     nodes: [
       { id: "Government Restructuring", group: "policy", level: 1 },
@@ -76,20 +90,31 @@ const Graph = () => {
     ]
   });
 
+  //
+  // 3) Configure forces (including collision for spacing)
+  //
   useEffect(() => {
     if (graphRef.current) {
-      // Increase negative charge for more spread
-      graphRef.current.d3Force("charge").strength(-120);
-      // Increase link distance so connected nodes are not too close
-      graphRef.current.d3Force("link").distance(100).strength(0.2);
-      // Adjust center if you prefer
-      graphRef.current.d3Force("center").strength(0.1);
-      // Add collision force with a collision radius of 30
-      graphRef.current.d3Force("collide", d3.forceCollide(30));
-    }
-  }, []);
+      // Adjust forces based on device
+      const chargeStrength = isMobile ? -80 : -120;
+      const linkDistance = isMobile ? 60 : 100;
+      const collideRadius = isMobile ? 30 : 50;
 
-  const handleNodeHover = useCallback(node => {
+      graphRef.current.d3Force("charge").strength(chargeStrength);
+      graphRef.current.d3Force("link").distance(linkDistance).strength(0.2);
+      graphRef.current.d3Force("center").strength(0.1);
+      graphRef.current.d3Force("collide", d3.forceCollide(collideRadius));
+      
+      // Zoom to fit on mobile
+      if (isMobile) {
+        graphRef.current.zoomToFit(400, 50);
+      }
+    }
+  }, [isMobile]);
+  //
+  // 4) Node hover highlighting
+  //
+  const handleNodeHover = useCallback((node) => {
     if (!node) {
       setHighlightNodes(new Set());
       setHighlightLinks(new Set());
@@ -97,92 +122,196 @@ const Graph = () => {
     }
     const neighbors = new Set([node.id]);
     const links = new Set();
-    graphDataRef.current.links.forEach(link => {
-      const srcId = link.source.id || link.source;
-      const trgId = link.target.id || link.target;
+
+    graphDataRef.current.links.forEach((link) => {
+      // link.source / link.target might be IDs or objects
+      const srcId = typeof link.source === "object" ? link.source.id : link.source;
+      const trgId = typeof link.target === "object" ? link.target.id : link.target;
       if (srcId === node.id || trgId === node.id) {
         neighbors.add(srcId);
         neighbors.add(trgId);
         links.add(link);
       }
     });
+
     setHighlightNodes(neighbors);
     setHighlightLinks(links);
   }, []);
 
-  const handleNodeClick = useCallback(node => {
+  //
+  // 5) Node click -> select node & unfix so user can drag it
+  //
+  const handleNodeClick = useCallback((node) => {
     if (!node) return;
-    // Unfix so the user can drag it
+    // Unfix so user can move it around
     node.fx = null;
     node.fy = null;
-    setSelectedNode(selectedNode?.id === node.id ? null : node);
-  }, [selectedNode]);
+    // Toggle selection
+    setSelectedNode((prev) => (prev?.id === node.id ? null : node));
+  }, []);
 
-  const handleNodeDragEnd = useCallback(node => {
-    // Fix position after dragging, so it doesn't snap back
+  //
+  // 6) Re-fix node after user drags it
+  //
+  const handleNodeDragEnd = useCallback((node) => {
     node.fx = node.x;
     node.fy = node.y;
   }, []);
 
-  const paintNode = useCallback((node, ctx, globalScale) => {
-    const label = node.id;
-    const fontSize = 14 / globalScale;
-    const isHighlighted = highlightNodes.has(node.id);
-    const isSelected = selectedNode?.id === node.id;
+  //
+  // 7) Custom paint function for canvas nodes
+  //
+  const paintNode = useCallback(
+    (node, ctx, globalScale) => {
+      const label = node.id;
+      const fontSize = isMobile ? 12 / globalScale : 14 / globalScale;
+      const nodeRadius = isMobile ? 6 : 8;
+      const isHighlighted = highlightNodes.has(node.id);
+      const isSelected = selectedNode?.id === node.id;
 
-    ctx.beginPath();
-    ctx.arc(node.x, node.y, 8, 0, 2 * Math.PI);
-    ctx.fillStyle = isHighlighted || isSelected
-      ? colorMap[node.group]
-      : `${colorMap[node.group]}99`;
-    ctx.fill();
+      // Draw circle
+      ctx.beginPath();
+      ctx.arc(node.x, node.y, nodeRadius, 0, 2 * Math.PI);
+      ctx.fillStyle = isHighlighted || isSelected
+        ? colorMap[node.group]
+        : `${colorMap[node.group]}99`;
+      ctx.fill();
 
-    ctx.font = `${isHighlighted ? "bold" : "normal"} ${fontSize}px Sans-Serif`;
-    ctx.fillStyle = isHighlighted ? "#000" : "#666";
-    ctx.textAlign = "center";
-    ctx.fillText(label, node.x, node.y + 15);
-  }, [highlightNodes, selectedNode]);
+      // Label
+      ctx.font = `${isHighlighted ? "bold" : "normal"} ${fontSize}px Sans-Serif`;
+      ctx.fillStyle = isHighlighted ? "#000" : "#666";
+      ctx.textAlign = "center";
+      ctx.fillText(label, node.x, node.y + nodeRadius + 5);
+    },
+    [highlightNodes, selectedNode, isMobile]
+  );
 
+  //
+  // 8) Slide-in side panel for details
+  //
+  // We’ll show the side panel if `selectedNode` is not null.
+  const sidePanelVisible = !!selectedNode;
+
+  //
+  // 9) Render
+  //
   return (
-    <div className="w-full h-screen bg-gray-50">
-      <div className="p-4">
-        <h1 className="text-2xl font-bold mb-4">Policy Impact Graph</h1>
-        {selectedNode && (
-          <div className="mb-4 p-4 bg-white rounded shadow">
-            <h2 className="font-bold">{selectedNode.id}</h2>
-            <p className="text-gray-600">Type: {selectedNode.group}</p>
-            <p className="text-gray-600">Impact Level: {selectedNode.level}</p>
-          </div>
+    <div className="relative w-full h-screen bg-gradient-to-br from-gray-50 via-gray-100 to-gray-200">
+      {/* Responsive Header */}
+      <header className={`p-4 ${isMobile ? 'pb-2' : 'p-8'} text-center`}>
+        <h1 className="text-2xl md:text-4xl font-bold text-gray-900 mb-2">
+          Policy Impact Graph
+        </h1>
+        {!isMobile && (
+          <p className="text-lg text-gray-600">
+            Explore policy initiatives and their cascading impacts
+          </p>
         )}
+      </header>
+
+      {/* Mobile-friendly Side Panel */}
+      <div
+        className={`
+          fixed inset-y-0 right-0 w-full md:w-96 bg-white/95 backdrop-blur-sm shadow-2xl 
+          transform transition-all duration-300 ease-in-out z-50
+          ${sidePanelVisible ? 'translate-x-0' : 'translate-x-full'}
+        `}
+      >
+        <div className="p-4 md:p-8">
+          <div className="flex justify-between items-center mb-4">
+            <h2 className="font-bold text-xl md:text-2xl text-gray-800">Node Details</h2>
+            <button
+              onClick={() => setSelectedNode(null)}
+              className="md:hidden p-2 rounded-full hover:bg-gray-100"
+            >
+              ✕
+            </button>
+          </div>
+          
+          {selectedNode ? (
+            <div className="space-y-4">
+              <div className="p-4 rounded-lg bg-gray-50 border border-gray-100">
+                <h3 className="text-lg font-semibold text-gray-800 mb-2">{selectedNode.id}</h3>
+                <div className="space-y-2">
+                  <p className="flex justify-between items-center text-gray-600">
+                    <span>Group:</span>
+                    <span className="font-medium capitalize">{selectedNode.group}</span>
+                  </p>
+                  <p className="flex justify-between items-center text-gray-600">
+                    <span>Level:</span>
+                    <span className="font-medium">{selectedNode.level}</span>
+                  </p>
+                </div>
+              </div>
+            </div>
+          ) : (
+            <p className="text-gray-600">Select a node to view details</p>
+          )}
+          
+          {!isMobile && (
+            <button
+              className="mt-6 w-full px-4 py-2 bg-blue-600 text-white rounded-lg 
+                hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500"
+              onClick={() => setSelectedNode(null)}
+            >
+              Close
+            </button>
+          )}
+        </div>
       </div>
-      <ForceGraph2D
-        ref={graphRef}
-        graphData={graphDataRef.current}
-        dagMode="td"
-        dagLevelDistance={100} // can tweak for vertical separation
-        linkDirectionalArrowLength={6}
-        linkDirectionalArrowRelPos={1}
-        backgroundColor="#f9fafb"
-        linkColor={link => highlightLinks.has(link) ? "#666" : "#ddd"}
-        linkWidth={link => highlightLinks.has(link) ? 2 : 1}
-        nodeCanvasObject={paintNode}
-        onNodeHover={handleNodeHover}
-        onNodeClick={handleNodeClick}
-        onNodeDragEnd={handleNodeDragEnd}
-        cooldownTicks={100}
-        onEngineStop={() => {
-          if (!isStabilized) {
-            // If you want them fixed after layout
-            graphDataRef.current.nodes.forEach(node => {
-              node.fx = node.x;
-              node.fy = node.y;
-            });
-            setIsStabilized(true);
-          }
-        }}
-      />
+
+      {/* Responsive Legend */}
+      <div className={`
+        ${isMobile ? 'fixed bottom-4 left-4 right-4' : 'absolute top-24 right-4'} 
+        bg-white/90 backdrop-blur-sm p-3 rounded-xl shadow-lg z-40
+      `}>
+        <div className={`flex ${isMobile ? 'justify-around' : 'flex-col space-y-3'}`}>
+          {Object.entries(colorMap).map(([group, color]) => (
+            <div key={group} className="flex items-center gap-2">
+              <span
+                style={{ backgroundColor: color }}
+                className="w-4 h-4 rounded-full shadow-sm flex-shrink-0"
+              />
+              <span className="capitalize text-gray-700 text-sm">{group}</span>
+            </div>
+          ))}
+        </div>
+      </div>
+
+      {/* ForceGraph2D */}
+      <div className="w-full h-full">
+        <ForceGraph2D
+          ref={graphRef}
+          graphData={graphDataRef.current}
+          nodeCanvasObject={paintNode}
+          onNodeHover={handleNodeHover}
+          onNodeClick={handleNodeClick}
+          onNodeDragEnd={handleNodeDragEnd}
+          dagMode="td"
+          dagLevelDistance={isMobile ? 60 : 100}
+          linkDirectionalArrowLength={6}
+          linkDirectionalArrowRelPos={1}
+          backgroundColor="#f9fafb"
+          linkColor={(link) => (highlightLinks.has(link) ? "#666" : "#ddd")}
+          linkWidth={(link) => (highlightLinks.has(link) ? 2 : 1)}
+          cooldownTicks={100}
+          onEngineStop={() => {
+            if (!isStabilized) {
+              graphDataRef.current.nodes.forEach((node) => {
+                node.fx = node.x;
+                node.fy = node.y;
+              });
+              setIsStabilized(true);
+            }
+          }}
+          // Mobile-specific props
+          enableNodeDrag={true}
+          enableZoomPanInteraction={true}
+          minZoom={0.5}
+          maxZoom={4}
+          style={{ touchAction: "none" }}
+        />
+      </div>
     </div>
   );
-};
-
-export default Graph;
+}
