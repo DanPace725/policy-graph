@@ -21,14 +21,6 @@ export default function Graph() {
   const [highlightLinks, setHighlightLinks] = useState(new Set());
   const [selectedNode, setSelectedNode] = useState(null);
   const [isStabilized, setIsStabilized] = useState(false);
-  const [isMobile, setIsMobile] = useState(window.innerWidth < 768);
-
-  // Listen for window resizes to update isMobile
-  useEffect(() => {
-    const handleResize = () => setIsMobile(window.innerWidth < 768);
-    window.addEventListener("resize", handleResize);
-    return () => window.removeEventListener("resize", handleResize);
-  }, []);
 
   //
   // 2) Store your graph data in a ref to avoid regenerating each render
@@ -97,22 +89,14 @@ export default function Graph() {
   //
   useEffect(() => {
     if (graphRef.current) {
-      // Adjust forces based on device
-      const chargeStrength = isMobile ? -80 : -120;
-      const linkDistance = isMobile ? 60 : 100;
-      const collideRadius = isMobile ? 30 : 50;
-
-      graphRef.current.d3Force("charge").strength(chargeStrength);
-      graphRef.current.d3Force("link").distance(linkDistance).strength(0.2);
+      graphRef.current.d3Force("charge").strength(-120); // stronger negative charge
+      graphRef.current.d3Force("link").distance(100).strength(0.2);
+      // Gentle centering
       graphRef.current.d3Force("center").strength(0.1);
-      graphRef.current.d3Force("collide", d3.forceCollide(collideRadius));
-      
-      // Zoom to fit on mobile
-      if (isMobile) {
-        graphRef.current.zoomToFit(400, 50);
-      }
+      // Collision force to push nodes apart so text doesn't overlap
+      graphRef.current.d3Force("collide", d3.forceCollide(30));
     }
-  }, [isMobile]);
+  }, []);
 
   //
   // 4) Node hover highlighting
@@ -142,11 +126,14 @@ export default function Graph() {
   }, []);
 
   //
-  // 5) Node click -> select node (removed unfixing so nodes don't jump)
+  // 5) Node click -> select node & unfix so user can drag it
   //
   const handleNodeClick = useCallback((node) => {
     if (!node) return;
-    // Simply toggle the selection without unfixing the node position:
+    // Unfix so user can move it around
+    node.fx = null;
+    node.fy = null;
+    // Toggle selection
     setSelectedNode((prev) => (prev?.id === node.id ? null : node));
   }, []);
 
@@ -164,76 +151,115 @@ export default function Graph() {
   const paintNode = useCallback(
     (node, ctx, globalScale) => {
       const label = node.id;
-      const fontSize = isMobile ? 12 / globalScale : 14 / globalScale;
-      const nodeRadius = isMobile ? 6 : 8;
+      const fontSize = 14 / globalScale;
       const isHighlighted = highlightNodes.has(node.id);
       const isSelected = selectedNode?.id === node.id;
 
-      // Draw node circle
+      // Draw circle
       ctx.beginPath();
-      ctx.arc(node.x, node.y, nodeRadius, 0, 2 * Math.PI);
+      ctx.arc(node.x, node.y, 8, 0, 2 * Math.PI);
       ctx.fillStyle = isHighlighted || isSelected
         ? colorMap[node.group]
         : `${colorMap[node.group]}99`;
       ctx.fill();
 
-      // Draw label below the node
+      // Label
       ctx.font = `${isHighlighted ? "bold" : "normal"} ${fontSize}px Sans-Serif`;
       ctx.fillStyle = isHighlighted ? "#000" : "#666";
       ctx.textAlign = "center";
-      ctx.fillText(label, node.x, node.y + nodeRadius + 5);
+      ctx.fillText(label, node.x, node.y + 15);
     },
-    [highlightNodes, selectedNode, isMobile]
+    [highlightNodes, selectedNode]
   );
 
   //
-  // 8) Render (header simplified, sidebar removed)
+  // 8) Slide-in side panel for details
+  //
+  // We’ll show the side panel if `selectedNode` is not null.
+  const sidePanelVisible = !!selectedNode;
+
+  //
+  // 9) Render
   //
   return (
-    <div className="relative w-full h-screen bg-gradient-to-br from-gray-50 via-gray-100 to-gray-200">
-      {/* Header with only the title */}
-      <header className="p-4 text-center">
-        <h1 className="text-2xl md:text-4xl font-bold text-gray-900">
+    <div className="relative w-full h-screen bg-gradient-to-r from-gray-100 to-gray-200">
+      {/* Header */}
+      <header className="p-6 text-center">
+        <h1 className="text-3xl font-extrabold tracking-tight text-gray-900 mb-2">
           Policy Impact Graph
         </h1>
+        <p className="text-lg text-gray-700">
+          Explore policy initiatives and their cascading impacts. Drag nodes around (even on mobile).
+        </p>
       </header>
 
-      {/* Responsive Legend */}
+      {/* Side Panel (slides in from right) */}
       <div
-        className={`${
-          isMobile ? "fixed bottom-4 left-4 right-4" : "absolute top-24 right-4"
-        } bg-white/90 backdrop-blur-sm p-3 rounded-xl shadow-lg z-40`}
+        className={`
+          fixed inset-y-0 right-0 w-80 bg-white shadow-2xl transform transition-transform duration-300 ease-in-out
+          ${sidePanelVisible ? "translate-x-0" : "translate-x-full"}
+        `}
       >
-        <div className={`${isMobile ? "justify-around" : "flex flex-col space-y-3"} flex`}>
-          {Object.entries(colorMap).map(([group, color]) => (
-            <div key={group} className="flex items-center gap-2">
-              <span
-                style={{ backgroundColor: color }}
-                className="w-4 h-4 rounded-full shadow-sm flex-shrink-0"
-              />
-              <span className="capitalize text-gray-700 text-sm">{group}</span>
-            </div>
-          ))}
+        <div className="p-6">
+          <h2 className="font-bold text-2xl text-gray-800 mb-4">Details</h2>
+          {selectedNode ? (
+            <>
+              <p className="mb-2 text-gray-700">
+                <strong>{selectedNode.id}</strong>
+              </p>
+              <p className="mb-1 text-gray-600">
+                Group: <strong>{selectedNode.group}</strong>
+              </p>
+              <p className="mb-1 text-gray-600">
+                Level: <strong>{selectedNode.level}</strong>
+              </p>
+            </>
+          ) : (
+            <p className="text-gray-600">No node selected.</p>
+          )}
+          <button
+            className="mt-6 w-full px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500"
+            onClick={() => setSelectedNode(null)}
+          >
+            Close
+          </button>
         </div>
+      </div>
+
+      {/* Legend (top-right corner) */}
+      <div className="absolute top-20 right-4 bg-white p-4 rounded-lg shadow-lg text-sm">
+        <h3 className="font-bold mb-3 text-gray-800">Legend</h3>
+        {Object.entries(colorMap).map(([group, color]) => (
+          <div key={group} className="flex items-center mb-2">
+            <span
+              style={{ backgroundColor: color }}
+              className="w-4 h-4 inline-block rounded-full mr-2"
+            />
+            <span className="capitalize text-gray-700">{group}</span>
+          </div>
+        ))}
       </div>
 
       {/* ForceGraph2D */}
       <div className="w-full h-full">
         <ForceGraph2D
           ref={graphRef}
+          // Allow pointer events for node dragging on mobile
+          style={{ touchAction: "none" }}
           graphData={graphDataRef.current}
-          nodeCanvasObject={paintNode}
-          onNodeHover={handleNodeHover}
-          onNodeClick={handleNodeClick}
-          onNodeDragEnd={handleNodeDragEnd}
           dagMode="td"
-          dagLevelDistance={isMobile ? 60 : 100}
+          dagLevelDistance={100}
           linkDirectionalArrowLength={6}
           linkDirectionalArrowRelPos={1}
           backgroundColor="#f9fafb"
           linkColor={(link) => (highlightLinks.has(link) ? "#666" : "#ddd")}
           linkWidth={(link) => (highlightLinks.has(link) ? 2 : 1)}
+          nodeCanvasObject={paintNode}
+          onNodeHover={handleNodeHover}
+          onNodeClick={handleNodeClick}
+          onNodeDragEnd={handleNodeDragEnd}
           cooldownTicks={100}
+          // Lock node positions once stabilized (optional)
           onEngineStop={() => {
             if (!isStabilized) {
               graphDataRef.current.nodes.forEach((node) => {
@@ -243,11 +269,6 @@ export default function Graph() {
               setIsStabilized(true);
             }
           }}
-          enableNodeDrag={true}
-          enableZoomPanInteraction={true}
-          minZoom={0.5}
-          maxZoom={4}
-          style={{ touchAction: "none" }}
         />
       </div>
     </div>
