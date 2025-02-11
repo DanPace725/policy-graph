@@ -15,17 +15,19 @@ const colorMap = {
 
 export default function Graph() {
   const graphRef = useRef(null);
+
+  // Hover and selection states
   const [highlightNodes, setHighlightNodes] = useState(new Set());
   const [highlightLinks, setHighlightLinks] = useState(new Set());
   const [selectedNode, setSelectedNode] = useState(null);
   const [isStabilized, setIsStabilized] = useState(false);
   const [isMobile, setIsMobile] = useState(window.innerWidth < 768);
 
-  // Add resize listener
+  // Listen for window resizes to update isMobile
   useEffect(() => {
     const handleResize = () => setIsMobile(window.innerWidth < 768);
-    window.addEventListener('resize', handleResize);
-    return () => window.removeEventListener('resize', handleResize);
+    window.addEventListener("resize", handleResize);
+    return () => window.removeEventListener("resize", handleResize);
   }, []);
 
   //
@@ -111,6 +113,7 @@ export default function Graph() {
       }
     }
   }, [isMobile]);
+
   //
   // 4) Node hover highlighting
   //
@@ -139,14 +142,11 @@ export default function Graph() {
   }, []);
 
   //
-  // 5) Node click -> select node & unfix so user can drag it
+  // 5) Node click -> select node (removed unfixing so nodes don't jump)
   //
   const handleNodeClick = useCallback((node) => {
     if (!node) return;
-    // Unfix so user can move it around
-    node.fx = null;
-    node.fy = null;
-    // Toggle selection
+    // Simply toggle the selection without unfixing the node position:
     setSelectedNode((prev) => (prev?.id === node.id ? null : node));
   }, []);
 
@@ -169,7 +169,7 @@ export default function Graph() {
       const isHighlighted = highlightNodes.has(node.id);
       const isSelected = selectedNode?.id === node.id;
 
-      // Draw circle
+      // Draw node circle
       ctx.beginPath();
       ctx.arc(node.x, node.y, nodeRadius, 0, 2 * Math.PI);
       ctx.fillStyle = isHighlighted || isSelected
@@ -177,7 +177,7 @@ export default function Graph() {
         : `${colorMap[node.group]}99`;
       ctx.fill();
 
-      // Label
+      // Draw label below the node
       ctx.font = `${isHighlighted ? "bold" : "normal"} ${fontSize}px Sans-Serif`;
       ctx.fillStyle = isHighlighted ? "#000" : "#666";
       ctx.textAlign = "center";
@@ -187,85 +187,24 @@ export default function Graph() {
   );
 
   //
-  // 8) Slide-in side panel for details
-  //
-  // We’ll show the side panel if `selectedNode` is not null.
-  const sidePanelVisible = !!selectedNode;
-
-  //
-  // 9) Render
+  // 8) Render (header simplified, sidebar removed)
   //
   return (
     <div className="relative w-full h-screen bg-gradient-to-br from-gray-50 via-gray-100 to-gray-200">
-      {/* Responsive Header */}
-      <header className={`p-4 ${isMobile ? 'pb-2' : 'p-8'} text-center`}>
-        <h1 className="text-2xl md:text-4xl font-bold text-gray-900 mb-2">
+      {/* Header with only the title */}
+      <header className="p-4 text-center">
+        <h1 className="text-2xl md:text-4xl font-bold text-gray-900">
           Policy Impact Graph
         </h1>
-        {!isMobile && (
-          <p className="text-lg text-gray-600">
-            Explore policy initiatives and their cascading impacts
-          </p>
-        )}
       </header>
 
-      {/* Mobile-friendly Side Panel */}
-      <div
-        className={`
-          fixed inset-y-0 right-0 w-full md:w-96 bg-white/95 backdrop-blur-sm shadow-2xl 
-          transform transition-all duration-300 ease-in-out z-50
-          ${sidePanelVisible ? 'translate-x-0' : 'translate-x-full'}
-        `}
-      >
-        <div className="p-4 md:p-8">
-          <div className="flex justify-between items-center mb-4">
-            <h2 className="font-bold text-xl md:text-2xl text-gray-800">Node Details</h2>
-            <button
-              onClick={() => setSelectedNode(null)}
-              className="md:hidden p-2 rounded-full hover:bg-gray-100"
-            >
-              ✕
-            </button>
-          </div>
-          
-          {selectedNode ? (
-            <div className="space-y-4">
-              <div className="p-4 rounded-lg bg-gray-50 border border-gray-100">
-                <h3 className="text-lg font-semibold text-gray-800 mb-2">{selectedNode.id}</h3>
-                <div className="space-y-2">
-                  <p className="flex justify-between items-center text-gray-600">
-                    <span>Group:</span>
-                    <span className="font-medium capitalize">{selectedNode.group}</span>
-                  </p>
-                  <p className="flex justify-between items-center text-gray-600">
-                    <span>Level:</span>
-                    <span className="font-medium">{selectedNode.level}</span>
-                  </p>
-                </div>
-              </div>
-            </div>
-          ) : (
-            <p className="text-gray-600">Select a node to view details</p>
-          )}
-          
-          {!isMobile && (
-            <button
-              className="mt-6 w-full px-4 py-2 bg-blue-600 text-white rounded-lg 
-                hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500"
-              onClick={() => setSelectedNode(null)}
-            >
-              Close
-            </button>
-          )}
-        </div>
-      </div>
-
       {/* Responsive Legend */}
-      <div className={`
-        ${isMobile ? 'fixed bottom-4 left-4 right-4' : 'absolute top-24 right-4'} 
-        bg-white/90 backdrop-blur-sm p-3 rounded-xl shadow-lg z-40
-      `}>
-        <div className={`flex ${isMobile ? 'justify-around' : 'flex-col space-y-3'}`}>
+      <div
+        className={`${
+          isMobile ? "fixed bottom-4 left-4 right-4" : "absolute top-24 right-4"
+        } bg-white/90 backdrop-blur-sm p-3 rounded-xl shadow-lg z-40`}
+      >
+        <div className={`${isMobile ? "justify-around" : "flex flex-col space-y-3"} flex`}>
           {Object.entries(colorMap).map(([group, color]) => (
             <div key={group} className="flex items-center gap-2">
               <span
@@ -304,7 +243,6 @@ export default function Graph() {
               setIsStabilized(true);
             }
           }}
-          // Mobile-specific props
           enableNodeDrag={true}
           enableZoomPanInteraction={true}
           minZoom={0.5}
