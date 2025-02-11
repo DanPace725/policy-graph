@@ -3,60 +3,60 @@ import { ForceGraph2D } from "react-force-graph";
 
 const graphData = {
   nodes: [
-    { id: "Government Restructuring", group: "policy" },
-    { id: "Department of Government Efficiency (DOGE)", group: "initiative" },
-    { id: "Trade Policy Changes", group: "policy" },
-    { id: "US Tariffs on Steel & Aluminum", group: "impact" },
-    { id: "Immigration Policy", group: "policy" },
-    { id: "Executive Orders on Deportation", group: "impact" },
-    { id: "Public Health Measures", group: "policy" },
-    { id: "Bird Flu Testing Requirements", group: "impact" },
-    { id: "USAID Downsizing", group: "impact" },
-    { id: "Agency Disruptions (CDC, CMS, HHS)", group: "impact" },
-    { id: "Loss of Institutional Memory", group: "impact" },
-    { id: "Chinese Retaliatory Tariffs", group: "impact" },
-    { id: "Canadian Oil Tariffs", group: "impact" },
-    { id: "Labor Shortages", group: "impact" },
-    { id: "Community Disruption", group: "impact" },
-    { id: "Lost Grain Deals", group: "impact" },
-    { id: "Agricultural Exports", group: "impact" },
-    { id: "Farming Costs", group: "impact" },
-    { id: "Agricultural Labor Supply", group: "impact" },
-    { id: "Disease Surveillance", group: "impact" },
-    { id: "Dairy Industry", group: "impact" },
-    { id: "Market Disruptions", group: "economic" },
-    { id: "Higher Consumer Prices", group: "economic" },
-    { id: "Rural Economic Decline", group: "economic" },
+    { id: "Government Restructuring", group: "policy", level: 1 },
+    { id: "Department of Government Efficiency (DOGE)", group: "initiative", level: 2 },
+    { id: "Trade Policy Changes", group: "policy", level: 1 },
+    { id: "US Tariffs on Steel & Aluminum", group: "impact", level: 2 },
+    { id: "Immigration Policy", group: "policy", level: 1 },
+    { id: "Executive Orders on Deportation", group: "impact", level: 2 },
+    { id: "Public Health Measures", group: "policy", level: 1 },
+    { id: "Bird Flu Testing Requirements", group: "impact", level: 2 },
+    { id: "USAID Downsizing", group: "impact", level: 3 },
+    { id: "Agency Disruptions (CDC, CMS, HHS)", group: "impact", level: 3 },
+    { id: "Loss of Institutional Memory", group: "impact", level: 3 },
+    { id: "Chinese Retaliatory Tariffs", group: "impact", level: 3 },
+    { id: "Canadian Oil Tariffs", group: "impact", level: 3 },
+    { id: "Labor Shortages", group: "impact", level: 3 },
+    { id: "Community Disruption", group: "impact", level: 3 },
+    { id: "Lost Grain Deals", group: "impact", level: 4 },
+    { id: "Agricultural Exports", group: "impact", level: 4 },
+    { id: "Farming Costs", group: "impact", level: 4 },
+    { id: "Agricultural Labor Supply", group: "impact", level: 4 },
+    { id: "Disease Surveillance", group: "impact", level: 4 },
+    { id: "Dairy Industry", group: "impact", level: 4 },
+    { id: "Market Disruptions", group: "economic", level: 5 },
+    { id: "Higher Consumer Prices", group: "economic", level: 5 },
+    { id: "Rural Economic Decline", group: "economic", level: 5 },
   ],
   links: [
-    { source: "Government Restructuring", target: "Department of Government Efficiency (DOGE)", label: "Creates" },
-    { source: "Trade Policy Changes", target: "US Tariffs on Steel & Aluminum", label: "Implements" },
-    { source: "Immigration Policy", target: "Executive Orders on Deportation", label: "Establishes" },
-    { source: "Public Health Measures", target: "Bird Flu Testing Requirements", label: "Mandates" },
-    { source: "Department of Government Efficiency (DOGE)", target: "USAID Downsizing", label: "Targets" },
-    { source: "Department of Government Efficiency (DOGE)", target: "Agency Disruptions (CDC, CMS, HHS)", label: "Affects" },
-    { source: "Department of Government Efficiency (DOGE)", target: "Loss of Institutional Memory", label: "Causes" },
-    { source: "US Tariffs on Steel & Aluminum", target: "Chinese Retaliatory Tariffs", label: "Triggers" },
-    { source: "US Tariffs on Steel & Aluminum", target: "Canadian Oil Tariffs", label: "Triggers" },
-    { source: "Executive Orders on Deportation", target: "Labor Shortages", label: "Creates" },
-    { source: "Executive Orders on Deportation", target: "Community Disruption", label: "Leads to" },
-    { source: "USAID Downsizing", target: "Lost Grain Deals", label: "Cancels" },
-    { source: "Chinese Retaliatory Tariffs", target: "Agricultural Exports", label: "Reduces" },
-    { source: "Canadian Oil Tariffs", target: "Farming Costs", label: "Increases" },
-    { source: "Labor Shortages", target: "Agricultural Labor Supply", label: "Affects" },
-    { source: "Agency Disruptions (CDC, CMS, HHS)", target: "Disease Surveillance", label: "Weakens" },
-    { source: "Bird Flu Testing Requirements", target: "Dairy Industry", label: "Affects" },
-    { source: "Dairy Industry", target: "Market Disruptions", label: "Affects" },
-    { source: "Dairy Industry", target: "Higher Consumer Prices", label: "Contributes to" },
-    { source: "Dairy Industry", target: "Rural Economic Decline", label: "Part of" },
-    { source: "Disease Surveillance", target: "Dairy Industry", label: "Impacts" },
-    { source: "Loss of Institutional Memory", target: "Disease Surveillance", label: "Weakens" },
-    { source: "Community Disruption", target: "Rural Economic Decline", label: "Affects" },
-    { source: "Higher Consumer Prices", target: "Community Disruption", label: "Strains" },
-    { source: "Agricultural Exports", target: "Market Disruptions", label: "Affects" },
-    { source: "Farming Costs", target: "Higher Consumer Prices", label: "Affects" },
-    { source: "Lost Grain Deals", target: "Rural Economic Decline", label: "Affects" },
-    { source: "Agricultural Labor Supply", target: "Rural Economic Decline", label: "Affects" },
+    { source: "Government Restructuring", target: "Department of Government Efficiency (DOGE)" },
+    { source: "Trade Policy Changes", target: "US Tariffs on Steel & Aluminum" },
+    { source: "Immigration Policy", target: "Executive Orders on Deportation" },
+    { source: "Public Health Measures", target: "Bird Flu Testing Requirements" },
+    { source: "Department of Government Efficiency (DOGE)", target: "USAID Downsizing" },
+    { source: "Department of Government Efficiency (DOGE)", target: "Agency Disruptions (CDC, CMS, HHS)" },
+    { source: "Department of Government Efficiency (DOGE)", target: "Loss of Institutional Memory" },
+    { source: "US Tariffs on Steel & Aluminum", target: "Chinese Retaliatory Tariffs" },
+    { source: "US Tariffs on Steel & Aluminum", target: "Canadian Oil Tariffs" },
+    { source: "Executive Orders on Deportation", target: "Labor Shortages" },
+    { source: "Executive Orders on Deportation", target: "Community Disruption" },
+    { source: "USAID Downsizing", target: "Lost Grain Deals" },
+    { source: "Chinese Retaliatory Tariffs", target: "Agricultural Exports" },
+    { source: "Canadian Oil Tariffs", target: "Farming Costs" },
+    { source: "Labor Shortages", target: "Agricultural Labor Supply" },
+    { source: "Agency Disruptions (CDC, CMS, HHS)", target: "Disease Surveillance" },
+    { source: "Bird Flu Testing Requirements", target: "Dairy Industry" },
+    { source: "Dairy Industry", target: "Market Disruptions" },
+    { source: "Dairy Industry", target: "Higher Consumer Prices" },
+    { source: "Dairy Industry", target: "Rural Economic Decline" },
+    { source: "Disease Surveillance", target: "Dairy Industry" },
+    { source: "Loss of Institutional Memory", target: "Disease Surveillance" },
+    { source: "Community Disruption", target: "Rural Economic Decline" },
+    { source: "Higher Consumer Prices", target: "Community Disruption" },
+    { source: "Agricultural Exports", target: "Market Disruptions" },
+    { source: "Farming Costs", target: "Higher Consumer Prices" },
+    { source: "Lost Grain Deals", target: "Rural Economic Decline" },
+    { source: "Agricultural Labor Supply", target: "Rural Economic Decline" },
   ],
 };
 
@@ -65,7 +65,8 @@ const Graph = () => {
 
   useEffect(() => {
     if (graphRef.current) {
-      graphRef.current.d3Force("charge").strength(-200);
+      graphRef.current.d3Force("charge").strength(-500);
+      graphRef.current.d3Force("link").distance(200);
     }
   }, []);
 
@@ -76,17 +77,20 @@ const Graph = () => {
         ref={graphRef}
         graphData={graphData}
         nodeAutoColorBy="group"
-        linkDirectionalArrowLength={6}
+        linkDirectionalArrowLength={8}
         linkDirectionalArrowRelPos={1}
-        nodeLabel="id"
-        linkLabel="label"
+        dagMode="td" // Set to "top-down" hierarchy
+        dagLevelDistance={100} // Space out the levels more
+        nodeRelSize={8} // Increase node size
+        linkColor={() => "gray"} // Improve contrast
+        linkWidth={1.5}
         nodeCanvasObject={(node, ctx, globalScale) => {
           const label = node.id;
-          const fontSize = 12 / globalScale;
+          const fontSize = 14 / globalScale;
           ctx.font = `${fontSize}px Sans-Serif`;
           ctx.fillStyle = "black";
           ctx.textAlign = "center";
-          ctx.fillText(label, node.x, node.y + 8);
+          ctx.fillText(label, node.x, node.y + 10);
         }}
       />
     </div>
