@@ -1,7 +1,3 @@
-Sure! Here’s a **basic README** for your project, formatted in **Markdown** so it can be used on GitHub or in your project directory.
-
----
-
 # **Policy Impact Graph**
 
 ### **📌 Overview**
@@ -108,6 +104,3 @@ Contributions are welcome! To contribute:
 ## **📧 Contact**
 For questions or feature requests, feel free to **open an issue** or reach out!
 
----
-
-This should be a **solid starting README** for your project! Let me know if you need any modifications. 🚀
